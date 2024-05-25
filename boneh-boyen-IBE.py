@@ -61,7 +61,7 @@ class Boneh_Boyen_IBE:
         n = params['n']
 
         #Hash identify to {0,1} based on group and length 'n'
-        a = Waters(group,n,1).hash(ID)
+        a = self.hash_to_list(ID,n)
 
         #Choose a random r form Zp
         r = [group.random(ZR) for i in range(n)]
@@ -94,13 +94,13 @@ class Boneh_Boyen_IBE:
         U = params['U']
 
         #Hash identify to {0,1} based on group and length 'n'
-        a = Waters(group,n,1).hash(ID) 
+        a = self.hash_to_list(ID,n)
 
         #Pick a random t from Zp
         t = group.random(ZR)
 
         #Operations for Cipher texts
-        A = M * (e ** t)
+        A =  (e ** t) * M
         B = g ** t
         C = {}
         for i in range(n):
@@ -135,10 +135,27 @@ class Boneh_Boyen_IBE:
 
         return M
 
+    def hash_to_list(self,strID,n):
+        """
+        Hashing Algorithm for "a" list
+
+        Args:
+            strID: Identity String
+            n: length of "a" list
+
+        Returns:
+           binary_list: list which encoded to binary
+        """
+        hash_algo = hashlib.sha512()
+        hash_algo.update(strID.encode('utf-8'))
+        hash_output = hash_algo.digest()
+        binary_str = "".join(format(byte, '08b') for byte in hash_output)[:n]
+        binary_list = [int(bit) for bit in binary_str]
+        return binary_list
 if __name__ == "__main__":
     #dID = secret key
     #params = master public key
-    from charm.toolbox.pairinggroup import PairingGroup, GT
+    from charm.toolbox.pairinggroup import PairingGroup, GT,G1
     group = PairingGroup('SS512')
     ibe = Boneh_Boyen_IBE(group)
     params, master_key = ibe.setup()
@@ -147,4 +164,6 @@ if __name__ == "__main__":
     msg = group.random(GT)
     cipher_text = ibe.encrypt(params, ID, msg)
     decrypted_msg = ibe.decrypt(params, dID, cipher_text)
+    print("Message: ", msg)
+    print("Decrypted Message: ", decrypted_msg)
     print("Validation Message == Decrypted Message:",decrypted_msg == msg)
